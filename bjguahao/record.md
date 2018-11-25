@@ -105,3 +105,31 @@ smsVerifyCode: 134555
 childrenBirthday: 
 isAjax: true
 ```
+
+```json
+dutySourceId: 58802486
+hospitalId: 142
+departmentId: 200039490
+doctorId: 201157204
+patientId: 233695148
+hospitalCardId: 
+medicareCardId: 
+reimbursementType: -1
+smsVerifyCode: 1234
+childrenBirthday: 
+isAjax: true
+```
+
+```json
+dutySourceId: 58802486
+hospitalId: 142
+departmentId: 200039490
+doctorId: 201157204
+patientId: 239452730
+hospitalCardId: 
+medicareCardId: 
+reimbursementType: -1
+smsVerifyCode: 1234
+childrenBirthday: 
+isAjax: true
+```
