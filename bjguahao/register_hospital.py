@@ -15,11 +15,13 @@ import json
 import os
 import logging
 import time
+import configparser
 from logging.handlers import TimedRotatingFileHandler
 
 from bjguahao_login import BjguahaoLogin
 
 VR_CODE_FILE = '/home/xiaoju/data/hospital/vr_code.txt'
+CUR_PATH = os.path.abspath(os.path.dirname(__file__))
 
 def init_log():
     if not os.path.exists('log'):
@@ -42,7 +44,12 @@ if __name__ == "__main__":
     hospital_id = 142
     department_id = 200039608
 
-    cookie = BjguahaoLogin('*******', '*******').get_cookie()
+    cf = configparser.ConfigParser()
+    cf.read(os.path.join(CUR_PATH, 'crawler.conf'))
+    user = cf.get('login', 'user')
+    passwd = cf.get('login', 'passwd')
+
+    cookie = BjguahaoLogin(user, passwd).get_cookie()
     logging.getLogger('server').info('login|cookie=%s' % (cookie))
 
     headers = {'Cookie': cookie}
