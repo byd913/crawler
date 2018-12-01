@@ -88,9 +88,9 @@ if __name__ == "__main__":
 
     request = urllib2.Request(url='http://www.bjguahao.gov.cn/v/sendorder.htm',
                               data=urllib.urlencode({}), headers=headers)
-    ret_data = json.loads(urllib2.urlopen(request).read())
-    logging.getLogger('server').info('send order|message=%s' % (json.dumps(ret_data)))
-
+    content = urllib2.urlopen(request).read()
+    ret_data = json.loads(content)
+    logging.getLogger('server').info('send order|message=%s' % (content))
 
     wait_minites = 10
     start_time = time.time()
@@ -107,14 +107,14 @@ if __name__ == "__main__":
     verify_code = raw_input('input vr code:')
     post_data = ('dutySourceId=%s&hospitalId=%s&departmentId=%s&doctorId=%s&patientId=%s'
                  '&hospitalCardId=&medicareCardId=&reimbursementType=-1&smsVerifyCode=%s'
-                 '&childrenBirthday=&isAjax=true' 
+                 '&childrenBirthday=&isAjax=true'
                  % (choosed_duty['dutySourceId'], hospital_id, department_id, choosed_duty['doctorId'],
                     patient_id, verify_code))
     logging.getLogger('server').info('short message conform|data=%s'
                                      % (post_data))
     request = urllib2.Request(url='http://www.bjguahao.gov.cn/order/confirmV1.htm',
-                               data=post_data,
-                               headers=headers)
+                              data=post_data,
+                              headers=headers)
     data = urllib2.urlopen(request).read()
     ret_data = json.loads(data)
     logging.getLogger('server').info('ret_data=%s' % (data))
