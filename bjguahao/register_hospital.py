@@ -46,6 +46,7 @@ if __name__ == "__main__":
     hospital_id = 142
     # department_id = 200039608
     department_id = 200039490
+    patient_id = 239452730
 
     cf = configparser.ConfigParser()
     cf.read(os.path.join(CUR_PATH, 'crawler.conf'))
@@ -60,7 +61,7 @@ if __name__ == "__main__":
        "hospitalId": hospital_id,
        "departmentId": department_id,
        "dutyCode": 2,
-       "dutyDate": '2018-12-10',
+       "dutyDate": '2018-12-06',
        "isAjax": True
     }
 
@@ -69,10 +70,10 @@ if __name__ == "__main__":
     while request_times >= 0 and not finished:
         request = urllib2.Request(url='http://www.bjguahao.gov.cn/dpt/partduty.htm',
                                   data=urllib.urlencode(data), headers=headers)
-        duty_data = json.loads(urllib2.urlopen(request).read())
+        content = urllib2.urlopen(request).read()
+        duty_data = json.loads(content)
 
-        logging.getLogger('server').info('get duty data|data=%s'
-                                         % (json.dumps(duty_data).encode('utf-8')))
+        logging.getLogger('server').info('get duty data|data=%s' % (content))
         # duty_list = filter(lambda item: item['doctorTitleName'].find(u'专家') != -1 or
         # item['doctorTitleName'].find(u'主任') != -1, duty_data['data'])
         duty_list = duty_data['data']
@@ -82,46 +83,38 @@ if __name__ == "__main__":
         time.sleep(1)
     if not finished:
         logging.getLogger('server').info('No doctor reday')
-
+        exit(1)
     choosed_duty = duty_list[0]
+
     request = urllib2.Request(url='http://www.bjguahao.gov.cn/v/sendorder.htm',
                               data=urllib.urlencode({}), headers=headers)
     ret_data = json.loads(urllib2.urlopen(request).read())
     logging.getLogger('server').info('send order|message=%s' % (json.dumps(ret_data)))
 
-    register_data = {
-        "dutySourceId": str(choosed_duty['dutySourceId']),
-        "hospitalId": str(hospital_id),
-        "departmentId": str(department_id),
-        "doctorId": str(choosed_duty['doctorId']),
-        "patientId": str(239452730),
-        "hospitalCardId": '',
-        "medicareCardId": '',
-        "reimbursementType": -1,
-        "smsVerifyCode": 1234,
-        "childrenBirthday": '',
-        "isAjax": True
-    }
 
     wait_minites = 10
     start_time = time.time()
-    while (not os.path.exists(VR_CODE_FILE) and
-           int(time.time() - start_time) <= wait_minites * 60):
-        time.sleep(30)
+    # while (not os.path.exists(VR_CODE_FILE) and
+    #        int(time.time() - start_time) <= wait_minites * 60):
+    #     time.sleep(30)
 
-    if not os.path.exists(VR_CODE_FILE):
-        logging.getLogger('server').warn('wait for %s minutes for vr code fail'
-                                         % (wait_minites))
-        exit(1)
+    # if not os.path.exists(VR_CODE_FILE):
+    #     logging.getLogger('server').warn('wait for %s minutes for vr code fail'
+    #                                      % (wait_minites))
+    #     exit(1)
 
     # verify_code = open(VR_CODE_FILE).read()
     verify_code = raw_input('input vr code:')
-    register_data['smsVerifyCode'] = verify_code
+    post_data = ('dutySourceId=%s&hospitalId=%s&departmentId=%s&doctorId=%s&patientId=%s'
+                 '&hospitalCardId=&medicareCardId=&reimbursementType=-1&smsVerifyCode=%s'
+                 '&childrenBirthday=&isAjax=true' 
+                 % (choosed_duty['dutySourceId'], hospital_id, department_id, choosed_duty['doctorId'],
+                    patient_id, verify_code))
     logging.getLogger('server').info('short message conform|data=%s'
-                                     % (json.dumps(register_data).encode('utf-8')))
+                                     % (post_data))
     request = urllib2.Request(url='http://www.bjguahao.gov.cn/order/confirmV1.htm',
-                              data=urllib.urlencode(register_data),
-                              headers=headers)
+                               data=post_data,
+                               headers=headers)
     data = urllib2.urlopen(request).read()
     ret_data = json.loads(data)
     logging.getLogger('server').info('ret_data=%s' % (data))
