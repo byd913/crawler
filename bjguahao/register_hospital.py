@@ -1,4 +1,4 @@
-#encoding=utf-8
+# encoding=utf-8
 
 ''' 根据医院、科室和日期选择自动挂号
 
@@ -23,6 +23,7 @@ from bjguahao_login import BjguahaoLogin
 VR_CODE_FILE = '/home/xiaoju/data/hospital/vr_code.txt'
 CUR_PATH = os.path.abspath(os.path.dirname(__file__))
 
+
 def init_log():
     if not os.path.exists('log'):
         os.makedirs('log')
@@ -34,6 +35,7 @@ def init_log():
     rotating_handler.setFormatter(formatter)
     rotating_handler.suffix = 'log.%Y-%m-%d'
     server_log.addHandler(rotating_handler)
+    server_log.setLevel(logging.INFO)
 
 
 if __name__ == "__main__":
@@ -42,7 +44,8 @@ if __name__ == "__main__":
         os.remove(VR_CODE_FILE)
 
     hospital_id = 142
-    department_id = 200039608
+    # department_id = 200039608
+    department_id = 200039490
 
     cf = configparser.ConfigParser()
     cf.read(os.path.join(CUR_PATH, 'crawler.conf'))
@@ -57,7 +60,7 @@ if __name__ == "__main__":
        "hospitalId": hospital_id,
        "departmentId": department_id,
        "dutyCode": 2,
-       "dutyDate": '2018-11-29',
+       "dutyDate": '2018-12-10',
        "isAjax": True
     }
 
@@ -65,28 +68,33 @@ if __name__ == "__main__":
     finished = False
     while request_times >= 0 and not finished:
         request = urllib2.Request(url='http://www.bjguahao.gov.cn/dpt/partduty.htm',
-                                data=urllib.urlencode(data), headers=headers)
+                                  data=urllib.urlencode(data), headers=headers)
         duty_data = json.loads(urllib2.urlopen(request).read())
 
-        logging.getLogger('server').info('get duty data|data=%s' % (json.dumps(duty_data)))
-        duty_list = filter(lambda item: item['doctorTitleName'].find(u'专家') != -1 or
-                        item['doctorTitleName'].find(u'主任') != -1, duty_data['data'])
-        if len(duty_data['data']) > 0:
+        logging.getLogger('server').info('get duty data|data=%s'
+                                         % (json.dumps(duty_data).encode('utf-8')))
+        # duty_list = filter(lambda item: item['doctorTitleName'].find(u'专家') != -1 or
+        # item['doctorTitleName'].find(u'主任') != -1, duty_data['data'])
+        duty_list = duty_data['data']
+        if len(duty_list) > 0:
             finished = True
         request_times -= 1
         time.sleep(1)
+    if not finished:
+        logging.getLogger('server').info('No doctor reday')
 
     choosed_duty = duty_list[0]
     request = urllib2.Request(url='http://www.bjguahao.gov.cn/v/sendorder.htm',
-                                data=urllib.urlencode({}), headers=headers)
+                              data=urllib.urlencode({}), headers=headers)
     ret_data = json.loads(urllib2.urlopen(request).read())
+    logging.getLogger('server').info('send order|message=%s' % (json.dumps(ret_data)))
 
     register_data = {
-        "dutySourceId": choosed_duty['dutySourceId'],
-        "hospitalId": hospital_id,
-        "departmentId": department_id,
-        "doctorId": choosed_duty['doctorId'],
-        "patientId": 239452730,
+        "dutySourceId": str(choosed_duty['dutySourceId']),
+        "hospitalId": str(hospital_id),
+        "departmentId": str(department_id),
+        "doctorId": str(choosed_duty['doctorId']),
+        "patientId": str(239452730),
         "hospitalCardId": '',
         "medicareCardId": '',
         "reimbursementType": -1,
@@ -97,21 +105,23 @@ if __name__ == "__main__":
 
     wait_minites = 10
     start_time = time.time()
-    while (not os.exists(VR_CODE_FILE) or
+    while (not os.path.exists(VR_CODE_FILE) and
            int(time.time() - start_time) <= wait_minites * 60):
         time.sleep(30)
 
-    if not os.exists(VR_CODE_FILE):
+    if not os.path.exists(VR_CODE_FILE):
         logging.getLogger('server').warn('wait for %s minutes for vr code fail'
                                          % (wait_minites))
         exit(1)
 
-    verify_code = open(VR_CODE_FILE).read()
-    register_data['smsVerifyCode'] = int(verify_code)
+    # verify_code = open(VR_CODE_FILE).read()
+    verify_code = raw_input('input vr code:')
+    register_data['smsVerifyCode'] = verify_code
+    logging.getLogger('server').info('short message conform|data=%s'
+                                     % (json.dumps(register_data).encode('utf-8')))
     request = urllib2.Request(url='http://www.bjguahao.gov.cn/order/confirmV1.htm',
-                                data=urllib.urlencode(register_data),
-                                headers=headers)
+                              data=urllib.urlencode(register_data),
+                              headers=headers)
     data = urllib2.urlopen(request).read()
     ret_data = json.loads(data)
     logging.getLogger('server').info('ret_data=%s' % (data))
-

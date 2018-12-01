@@ -9,6 +9,7 @@ import time
 import sqlite3
 import os
 
+
 DB_PATH = '/home/xiaoju/data/hospital/hospital_info.db'
 
 
@@ -64,12 +65,12 @@ if __name__ == "__main__":
 
     for k, v in hospital_dict.items():
         print(k)
-        cursor.execute('replace into hospital_info(hospital_id, name, href) values(%s, \'%s\', \'%s\')' 
+        cursor.execute('replace into hospital_info(hospital_id, name, href) values(%s, \'%s\', \'%s\')'
                     % (v['hospital_id'], k, v['href']))
         department_dict = get_department_ids(v['hospital_id'])
         time.sleep(1)
         for dk, dv in department_dict.items():
             cursor.execute('replace into department_info(department_id, hospital_id, name, href) '
-                        'values(%s, %s, \'%s\', \'%s\')' 
+                        'values(%s, %s, \'%s\', \'%s\')'
                         % (dv['department_id'], v['hospital_id'], dk, dv['href']))
     conn.commit()
