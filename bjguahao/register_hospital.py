@@ -56,7 +56,7 @@ if __name__ == "__main__":
     cookie = BjguahaoLogin(user, passwd).get_cookie()
     logging.getLogger('server').info('login|cookie=%s' % (cookie))
 
-    headers = {'Cookie': cookie}
+    my_headers = {'Cookie': cookie}
     data = {
        "hospitalId": hospital_id,
        "departmentId": department_id,
@@ -69,7 +69,7 @@ if __name__ == "__main__":
     finished = False
     while request_times >= 0 and not finished:
         request = urllib2.Request(url='http://www.bjguahao.gov.cn/dpt/partduty.htm',
-                                  data=urllib.urlencode(data), headers=headers)
+                                  data=urllib.urlencode(data), headers=my_headers)
         content = urllib2.urlopen(request).read()
         duty_data = json.loads(content)
 
@@ -87,34 +87,31 @@ if __name__ == "__main__":
     choosed_duty = duty_list[0]
 
     request = urllib2.Request(url='http://www.bjguahao.gov.cn/v/sendorder.htm',
-                              data=urllib.urlencode({}), headers=headers)
+                              data=urllib.urlencode({}), headers=my_headers)
     content = urllib2.urlopen(request).read()
     ret_data = json.loads(content)
     logging.getLogger('server').info('send order|message=%s' % (content))
 
     wait_minites = 10
     start_time = time.time()
-    # while (not os.path.exists(VR_CODE_FILE) and
-    #        int(time.time() - start_time) <= wait_minites * 60):
-    #     time.sleep(30)
+    while (not os.path.exists(VR_CODE_FILE) and
+           int(time.time() - start_time) <= wait_minites * 60):
+        time.sleep(30)
 
-    # if not os.path.exists(VR_CODE_FILE):
-    #     logging.getLogger('server').warn('wait for %s minutes for vr code fail'
-    #                                      % (wait_minites))
-    #     exit(1)
+    if not os.path.exists(VR_CODE_FILE):
+        logging.getLogger('server').warn('wait for %s minutes for vr code fail'
+                                         % (wait_minites))
+        exit(1)
 
-    # verify_code = open(VR_CODE_FILE).read()
-    verify_code = raw_input('input vr code:')
+    verify_code = open(VR_CODE_FILE).read()
+    # verify_code = raw_input('input vr code:')
     post_data = ('dutySourceId=%s&hospitalId=%s&departmentId=%s&doctorId=%s&patientId=%s'
                  '&hospitalCardId=&medicareCardId=&reimbursementType=-1&smsVerifyCode=%s'
                  '&childrenBirthday=&isAjax=true'
                  % (choosed_duty['dutySourceId'], hospital_id, department_id, choosed_duty['doctorId'],
                     patient_id, verify_code))
-    logging.getLogger('server').info('short message conform|data=%s'
-                                     % (post_data))
-    request = urllib2.Request(url='http://www.bjguahao.gov.cn/order/confirmV1.htm',
-                              data=post_data,
-                              headers=headers)
+    logging.getLogger('server').info('short message conform|data=%s' % (post_data))
+    request = urllib2.Request(url='http://www.bjguahao.gov.cn/order/confirmV1.htm', data=post_data, headers=my_headers)
     data = urllib2.urlopen(request).read()
     ret_data = json.loads(data)
     logging.getLogger('server').info('ret_data=%s' % (data))
