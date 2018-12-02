@@ -16,6 +16,7 @@ import os
 import logging
 import time
 import configparser
+from datetime import datetime, timedelta
 from logging.handlers import TimedRotatingFileHandler
 
 from bjguahao_login import BjguahaoLogin
@@ -44,8 +45,8 @@ if __name__ == "__main__":
         os.remove(VR_CODE_FILE)
 
     hospital_id = 142
-    # department_id = 200039608
-    department_id = 200039490
+    department_id = 200039542  # 口腔科门诊
+    # department_id = 200039490
     patient_id = 239452730
 
     cf = configparser.ConfigParser()
@@ -57,15 +58,16 @@ if __name__ == "__main__":
     logging.getLogger('server').info('login|cookie=%s' % (cookie))
 
     my_headers = {'Cookie': cookie}
+    book_date = datetime.now() + timedelta(days=7)
     data = {
        "hospitalId": hospital_id,
        "departmentId": department_id,
        "dutyCode": 2,
-       "dutyDate": '2018-12-06',
+       "dutyDate": book_date.strftime('%Y-%m-%d'),
        "isAjax": True
     }
 
-    request_times = 6
+    request_times = 20
     finished = False
     while request_times >= 0 and not finished:
         request = urllib2.Request(url='http://www.bjguahao.gov.cn/dpt/partduty.htm',
@@ -74,13 +76,13 @@ if __name__ == "__main__":
         duty_data = json.loads(content)
 
         logging.getLogger('server').info('get duty data|data=%s' % (content))
-        # duty_list = filter(lambda item: item['doctorTitleName'].find(u'专家') != -1 or
-        # item['doctorTitleName'].find(u'主任') != -1, duty_data['data'])
-        duty_list = duty_data['data']
+        duty_list = filter(lambda item: item['doctorTitleName'].find(u'专家') != -1 or
+                           item['doctorTitleName'].find(u'主任') != -1, duty_data['data'])
+        # duty_list = duty_data['data']
         if len(duty_list) > 0:
             finished = True
         request_times -= 1
-        time.sleep(1)
+        time.sleep(2)
     if not finished:
         logging.getLogger('server').info('No doctor reday')
         exit(1)
