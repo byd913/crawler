@@ -76,8 +76,9 @@ if __name__ == "__main__":
         duty_data = json.loads(content)
 
         logging.getLogger('server').info('get duty data|data=%s' % (content))
+        duty_list = filter(lambda item: int(item['remainAvailableNumber']) > 0, duty_data['data'])
         duty_list = filter(lambda item: item['doctorTitleName'].find(u'专家') != -1 or
-                           item['doctorTitleName'].find(u'主任') != -1, duty_data['data'])
+                           item['doctorTitleName'].find(u'主任') != -1, duty_list)
         # duty_list = duty_data['data']
         if len(duty_list) > 0:
             finished = True
